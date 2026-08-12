@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notion Connector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1>Notion Quick Capture</h1>
+          <p class="subtitle">Capture tasks in seconds.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="openSettingsBtn" class="chip-btn" type="button">Settings</button>
+        </div>
+      </header>
+
+      <section id="taskPanel" class="task-form">
+        <section class="today-section">
+          <div class="today-header">
+            <h2>Tasks</h2>
+            <div class="tasks-controls">
+              <select id="tasksFilter" class="tasks-filter" aria-label="Filter tasks">
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="all">All</option>
+              </select>
+              <select id="sectionFilter" class="tasks-filter wide-filter" aria-label="Filter by section day">
+                <option value="">All sections</option>
+              </select>
+              <div id="statusFilterDropdown" class="multi-dropdown wide-filter">
+                <button
+                  id="statusFilterBtn"
+                  class="multi-dropdown-btn"
+                  type="button"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  All statuses
+                </button>
+                <div id="statusFilterMenu" class="multi-dropdown-menu hidden" role="menu"></div>
+              </div>
+              <select id="paraFilter" class="tasks-filter wide-filter" aria-label="Filter by PARA">
+                <option value="">All PARA</option>
+              </select>
+              <button id="refreshTodayBtn" class="chip-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <p id="todayCaption" class="hint">Loading tasks...</p>
+          <p id="todayEmpty" class="hint hidden">No tasks for the selected filter.</p>
+          <div class="today-table-wrap">
+            <table class="today-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Day section</th>
+                  <th>PARA</th>
+                  <th>Status</th>
+                  <th>Do on</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="todayTasksBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="settingsPanel" class="settings hidden" aria-hidden="true">
+        <div class="settings-header">
+          <h2>Settings</h2>
+        </div>
+
+        <label for="token">Notion API token</label>
+        <input id="token" type="password" placeholder="secret_..." autocomplete="off" />
+
+        <label for="databaseId">Tasks Database ID</label>
+        <input id="databaseId" type="text" placeholder="Notion database id" autocomplete="off" />
+
+        <label for="paraDatabaseId">PARA Database ID</label>
+        <input id="paraDatabaseId" type="text" placeholder="Notion PARA database id" autocomplete="off" />
+
+        <div class="settings-actions">
+          <button id="saveSettingsBtn" type="button">Save settings</button>
+          <button id="testBtn" type="button">Test connection</button>
+        </div>
+        <p id="settingsHint" class="hint"></p>
+      </section>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
