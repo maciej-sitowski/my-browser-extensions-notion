@@ -25,7 +25,8 @@
             <div class="tasks-controls">
               <select id="tasksFilter" class="tasks-filter" aria-label="Filter tasks">
                 <option value="today">Today</option>
-                <option value="week">This week</option>
+                <option value="this_week">This week</option>
+                <option value="last_week">Last week</option>
                 <option value="all">All</option>
               </select>
               <select id="sectionFilter" class="tasks-filter wide-filter" aria-label="Filter by section day">
@@ -45,6 +46,13 @@
               </div>
               <select id="paraFilter" class="tasks-filter wide-filter" aria-label="Filter by PARA">
                 <option value="">All PARA</option>
+              </select>
+              <select id="tasksSort" class="tasks-filter wide-filter" aria-label="Sort tasks">
+                <option value="do_on_asc">Do on (earliest first)</option>
+                <option value="do_on_desc">Do on (latest first)</option>
+                <option value="section_asc">Day section (A-Z)</option>
+                <option value="para_asc">PARA (A-Z)</option>
+                <option value="status_asc">Status (A-Z)</option>
               </select>
               <button id="refreshTodayBtn" class="chip-btn" type="button">Refresh</button>
             </div>

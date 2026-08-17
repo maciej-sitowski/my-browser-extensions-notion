@@ -49,6 +49,7 @@ const statusFilterDropdown = document.getElementById("statusFilterDropdown");
 const statusFilterBtn = document.getElementById("statusFilterBtn");
 const statusFilterMenu = document.getElementById("statusFilterMenu");
 const paraFilter = document.getElementById("paraFilter");
+const tasksSort = document.getElementById("tasksSort");
 const todayTasksBody = document.getElementById("todayTasksBody");
 const todayEmpty = document.getElementById("todayEmpty");
 const todayCaption = document.getElementById("todayCaption");
@@ -80,6 +81,7 @@ refreshTodayBtn.addEventListener("click", async () => {
 tasksFilter.addEventListener("change", () => renderFilteredTasks());
 sectionFilter.addEventListener("change", () => renderFilteredTasks());
 paraFilter.addEventListener("change", () => renderFilteredTasks());
+tasksSort.addEventListener("change", () => renderFilteredTasks());
 
 statusFilterBtn.addEventListener("click", (event) => {
   event.stopPropagation();
@@ -272,7 +274,7 @@ function parseDateOnly(value) {
   return new Date(year, month - 1, day);
 }
 
-function isInCurrentWeek(value) {
+function isInWeek(value, weeksAgo = 0) {
   const date = parseDateOnly(value);
   if (!date) {
     return false;
@@ -284,7 +286,7 @@ function isInCurrentWeek(value) {
   const dayOfWeek = current.getDay();
   const daysSinceMonday = (dayOfWeek + 6) % 7;
   const weekStart = new Date(current);
-  weekStart.setDate(current.getDate() - daysSinceMonday);
+  weekStart.setDate(current.getDate() - daysSinceMonday - weeksAgo * 7);
 
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
@@ -336,13 +338,18 @@ function renderFilteredTasks() {
   const selectedSection = sectionFilter.value;
   const selectedStatuses = getSelectedStatuses();
   const selectedParaId = paraFilter.value;
+  const sortMode = tasksSort.value;
 
   const filtered = allTasksCache.filter((task) => {
     if (mode === "today" && (task.doOn || "").slice(0, 10) !== today) {
       return false;
     }
 
-    if (mode === "week" && !isInCurrentWeek(task.doOn || "")) {
+    if (mode === "this_week" && !isInWeek(task.doOn || "", 0)) {
+      return false;
+    }
+
+    if (mode === "last_week" && !isInWeek(task.doOn || "", 1)) {
       return false;
     }
 
@@ -362,8 +369,53 @@ function renderFilteredTasks() {
   });
 
   todayCaption.textContent = "";
+  renderTodayTasksTable(sortTasks(filtered, sortMode));
+}
 
-  renderTodayTasksTable(filtered);
+function sortTasks(tasks, mode) {
+  const sorted = [...(tasks || [])];
+
+  sorted.sort((a, b) => {
+    if (mode === "section_asc") {
+      return compareText(a.sectionDay, b.sectionDay);
+    }
+
+    if (mode === "para_asc") {
+      const aParaId = (a.paraRelationIds && a.paraRelationIds[0]) || "";
+      const bParaId = (b.paraRelationIds && b.paraRelationIds[0]) || "";
+      const aPara = paraNameById.get(aParaId) || "";
+      const bPara = paraNameById.get(bParaId) || "";
+      return compareText(aPara, bPara);
+    }
+
+    if (mode === "status_asc") {
+      return compareText(a.status, b.status);
+    }
+
+    const aDate = parseDateOnly(a.doOn || "");
+    const bDate = parseDateOnly(b.doOn || "");
+
+    if (!aDate && !bDate) {
+      return 0;
+    }
+
+    if (!aDate) {
+      return 1;
+    }
+
+    if (!bDate) {
+      return -1;
+    }
+
+    const diff = aDate.getTime() - bDate.getTime();
+    return mode === "do_on_desc" ? -diff : diff;
+  });
+
+  return sorted;
+}
+
+function compareText(a, b) {
+  return (a || "").localeCompare(b || "", undefined, { sensitivity: "base", numeric: true });
 }
 
 function getSelectedStatuses() {
