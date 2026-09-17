@@ -252,13 +252,18 @@ function showToast(text, type = "ok") {
   }, 2800);
 }
 
-function getTodayDateString() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+function getDateString(daysOffset = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
+
+
 
 function parseDateOnly(value) {
   if (!value) {
@@ -334,7 +339,8 @@ async function fetchAndRenderTasks() {
 
 function renderFilteredTasks() {
   const mode = tasksFilter.value;
-  const today = getTodayDateString();
+  const today = getDateString();
+  const yesterday = getDateString(-1);
   const selectedSection = sectionFilter.value;
   const selectedStatuses = getSelectedStatuses();
   const selectedParaId = paraFilter.value;
@@ -342,6 +348,10 @@ function renderFilteredTasks() {
 
   const filtered = allTasksCache.filter((task) => {
     if (mode === "today" && (task.doOn || "").slice(0, 10) !== today) {
+      return false;
+    }
+
+    if (mode === "yesterday" && (task.doOn || "").slice(0, 10) !== yesterday) {
       return false;
     }
 
