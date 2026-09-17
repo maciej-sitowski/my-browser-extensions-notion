@@ -5,6 +5,7 @@ import {
   fetchNoteContent,
   fetchNotes,
   fetchParaInstances,
+  postponeTask,
   replaceNoteContent,
   testConnection,
   updateNoteFields,
@@ -18,6 +19,7 @@ const MESSAGE_HANDLERS = {
   "notion:fetchAllTasks": (message) => fetchAllTasks(message.token, message.databaseId),
   "notion:updateTaskFields": (message) =>
     updateTaskFields(message.token, message.databaseId, message.pageId, message.task),
+  "notion:postponeTask": (message) => postponeTask(message.token, message.databaseId, message.pageId, message.task),
   "notion:fetchNotes": (message) => fetchNotes(message.token, message.notesDatabaseId),
   "notion:createNote": (message) => createNote(message.token, message.notesDatabaseId, message.note),
   "notion:updateNoteFields": (message) =>

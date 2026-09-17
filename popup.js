@@ -21,7 +21,13 @@ const DEFAULT_STATUS_OPTIONS = ["Not started", "In progress", "Waiting on", "Don
 
 const ICONS = {
   open: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  postpone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><path d="M12 14h6"/><path d="M15 11l3 3-3 3"/></svg>`,
   save: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>`
+};
+
+const POSTPONE_HIGHLIGHT = {
+  warnAfter: 3,
+  alertAfter: 5
 };
 
 const SECTION_DAY_THEMES = {
@@ -379,6 +385,16 @@ function sendMessage(payload) {
       resolve(response);
     });
   });
+}
+
+async function getTaskSettings() {
+  const settings = await getSettings();
+  if (!settings.token || !settings.databaseId) {
+    showToast("Open Settings and save token + task database ID.", "fail");
+    return null;
+  }
+
+  return settings;
 }
 
 function mountFormatHelp() {
@@ -1109,9 +1125,8 @@ function buildCreateRow() {
   }
 
   saveBtn.addEventListener("click", async () => {
-    const settings = await getSettings();
-    if (!settings.token || !settings.databaseId) {
-      showToast("Open Settings and save token + task database ID.", "fail");
+    const settings = await getTaskSettings();
+    if (!settings) {
       return;
     }
 
@@ -1123,8 +1138,8 @@ function buildCreateRow() {
         token: settings.token,
         databaseId: settings.databaseId,
         task: {
-          title: titleInput.value.trim(),
           sectionDay: sectionSelect.value,
+          title: titleInput.value.trim(),
           paraRelationId: paraSelect.value,
           dueDate: dueInput.value || getDateString(),
           statusName: statusSelect.value.trim() || getDefaultTaskStatus()
@@ -1139,8 +1154,8 @@ function buildCreateRow() {
     }
   });
 
-  row.appendChild(wrapTd(titleInput));
   row.appendChild(wrapTd(sectionSelect));
+  row.appendChild(wrapTd(titleInput));
   row.appendChild(wrapTd(paraSelect));
   row.appendChild(wrapTd(statusSelect));
   row.appendChild(wrapTd(dueInput));
@@ -1168,16 +1183,16 @@ function buildEditableTaskRow(item) {
   saveBtn.disabled = true;
 
   const original = {
-    title: (item.title || "").trim(),
     sectionDay: item.sectionDay || "",
+    title: (item.title || "").trim(),
     paraRelationId: (item.paraRelationIds && item.paraRelationIds[0]) || "",
     status: item.status || "",
     dueDate: normalizeDateInputValue(item.doOn)
   };
 
   const current = () => ({
-    title: titleInput.value.trim(),
     sectionDay: sectionSelect.value,
+    title: titleInput.value.trim(),
     paraRelationId: paraSelect.value,
     status: statusSelect.value,
     dueDate: dueInput.value
@@ -1186,8 +1201,8 @@ function buildEditableTaskRow(item) {
   const syncSaveState = () => {
     const now = current();
     const changed =
-      now.title !== original.title ||
       now.sectionDay !== original.sectionDay ||
+      now.title !== original.title ||
       now.paraRelationId !== original.paraRelationId ||
       now.status !== original.status ||
       now.dueDate !== original.dueDate;
@@ -1201,9 +1216,8 @@ function buildEditableTaskRow(item) {
   });
 
   saveBtn.addEventListener("click", async () => {
-    const settings = await getSettings();
-    if (!settings.token || !settings.databaseId) {
-      showToast("Open Settings and save token + task database ID.", "fail");
+    const settings = await getTaskSettings();
+    if (!settings) {
       return;
     }
 
@@ -1233,14 +1247,68 @@ function buildEditableTaskRow(item) {
     }
   });
 
-  row.appendChild(wrapTd(titleInput));
+  const postponeBtn = createIconButton("postpone", "Postpone 1 day");
+  postponeBtn.addEventListener("click", async () => {
+    const settings = await getTaskSettings();
+    if (!settings) {
+      return;
+    }
+
+    postponeBtn.disabled = true;
+
+    try {
+      await sendMessage({
+        type: "notion:postponeTask",
+        token: settings.token,
+        databaseId: settings.databaseId,
+        pageId: item.id,
+        task: {
+          dueDate: dueInput.value || item.doOn,
+          counter: item.counter
+        }
+      });
+
+      showToast("Task postponed by 1 day.", "ok");
+      await fetchAndRenderTasks();
+    } catch (error) {
+      showToast(error.message || "Postpone failed.", "fail");
+      postponeBtn.disabled = false;
+    }
+  });
+
+  applyPostponeHighlight(row, item.counter);
+
   row.appendChild(wrapTd(sectionSelect));
+  row.appendChild(wrapTd(titleInput));
   row.appendChild(wrapTd(paraSelect));
   row.appendChild(wrapTd(statusSelect));
   row.appendChild(wrapTd(dueInput));
-  row.appendChild(wrapActionCell(saveBtn));
+  row.appendChild(wrapActionCell(postponeBtn, saveBtn));
 
   return row;
+}
+
+function applyPostponeHighlight(row, counter) {
+  row.classList.remove("postpone-warn", "postpone-alert");
+
+  const highlightClass = postponeHighlightClass(counter);
+  if (highlightClass) {
+    row.classList.add(highlightClass);
+  }
+}
+
+function postponeHighlightClass(counter) {
+  const value = Number(counter) || 0;
+
+  if (value > POSTPONE_HIGHLIGHT.alertAfter) {
+    return "postpone-alert";
+  }
+
+  if (value > POSTPONE_HIGHLIGHT.warnAfter) {
+    return "postpone-warn";
+  }
+
+  return "";
 }
 
 function wrapTd(child) {

@@ -1,12 +1,7 @@
 export function getDateString(daysOffset = 0) {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return formatDateOnly(date);
 }
 
 export function normalizeDateInputValue(value) {
@@ -69,4 +64,24 @@ export function matchesDateFilter(value, mode) {
   }
 
   return true;
+}
+
+export function addDaysToDateString(value, days) {
+  const date = parseDateOnly(value) || parseDateOnly(getDateString());
+  date.setDate(date.getDate() + days);
+  return formatDateOnly(date);
+}
+
+export function nextPostponeState(dueDate, counter) {
+  return {
+    dueDate: addDaysToDateString(dueDate, 1),
+    counter: (Number(counter) || 0) + 1
+  };
+}
+
+function formatDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

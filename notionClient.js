@@ -1,4 +1,4 @@
-import { getDateString } from "./dates.js";
+import { getDateString, nextPostponeState } from "./dates.js";
 
 const NOTION_BASE_URL = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
@@ -264,6 +264,54 @@ export async function fetchParaInstances(token, paraDatabaseId) {
   };
 }
 
+function pickNumberProperty(properties, key) {
+  const prop = properties?.[key];
+  if (!prop) {
+    return 0;
+  }
+
+  if (prop.type === "number" && typeof prop.number === "number") {
+    return prop.number;
+  }
+
+  if (prop.type === "formula" && prop.formula?.type === "number" && typeof prop.formula.number === "number") {
+    return prop.formula.number;
+  }
+
+  return 0;
+}
+
+function pickCounterValue(properties) {
+  const key = findNumberPropertyName(properties, "Counter", /counter/i);
+  return key ? pickNumberProperty(properties, key) : 0;
+}
+
+function findNumberPropertyName(properties, preferredName, namePattern) {
+  if (properties?.[preferredName]?.type === "number" || properties?.[preferredName]?.type === "formula") {
+    return preferredName;
+  }
+
+  const match = Object.entries(properties || {}).find(
+    ([name, prop]) => prop?.type === "number" && namePattern.test(name)
+  );
+
+  return match?.[0] || "";
+}
+
+function mapTaskItem(row, statusConfig) {
+  const properties = row.properties || {};
+  return {
+    id: row.id,
+    title: findTitleFromProperties(properties),
+    sectionDay: pickTextProperty(properties, "Sekcja dnia"),
+    paraRelationIds: pickRelationIds(properties, "PARA"),
+    status: pickStatusProperty(properties, statusConfig.propertyName),
+    doOn: pickDateProperty(properties, "Do on"),
+    counter: pickCounterValue(properties),
+    url: row.url || ""
+  };
+}
+
 function pickDateProperty(properties, key) {
   const prop = properties?.[key];
   if (!prop || prop.type !== "date") {
@@ -484,18 +532,7 @@ export async function fetchTodayTasks(token, databaseId, dateString) {
     token
   );
 
-  const items = (payload.results || []).map((row) => {
-    const properties = row.properties || {};
-    return {
-      id: row.id,
-      title: findTitleFromProperties(properties),
-      sectionDay: pickTextProperty(properties, "Sekcja dnia"),
-      paraRelationIds: pickRelationIds(properties, "PARA"),
-      status: pickStatusProperty(properties, statusConfig.propertyName),
-      doOn: pickDateProperty(properties, "Do on"),
-      url: row.url || ""
-    };
-  });
+  const items = (payload.results || []).map((row) => mapTaskItem(row, statusConfig));
 
   return {
     ok: true,
@@ -531,18 +568,7 @@ export async function fetchAllTasks(token, databaseId) {
     token
   );
 
-  const items = (payload.results || []).map((row) => {
-    const properties = row.properties || {};
-    return {
-      id: row.id,
-      title: findTitleFromProperties(properties),
-      sectionDay: pickTextProperty(properties, "Sekcja dnia"),
-      paraRelationIds: pickRelationIds(properties, "PARA"),
-      status: pickStatusProperty(properties, statusConfig.propertyName),
-      doOn: pickDateProperty(properties, "Do on"),
-      url: row.url || ""
-    };
-  });
+  const items = (payload.results || []).map((row) => mapTaskItem(row, statusConfig));
 
   return {
     ok: true,
@@ -1163,4 +1189,44 @@ export async function updateTaskFields(token, databaseId, pageId, task) {
     id: payload.id,
     url: payload.url || ""
   };
+}
+
+export async function postponeTask(token, databaseId, pageId, task) {
+  requireTaskPage(databaseId, pageId);
+
+  const { dueDate, counter } = nextPostponeState(task?.dueDate, task?.counter);
+  const payload = await notionRequest(
+    `/pages/${pageId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        properties: {
+          "Do on": {
+            date: { start: dueDate }
+          },
+          Counter: {
+            number: counter
+          }
+        }
+      })
+    },
+    token
+  );
+
+  return {
+    ok: true,
+    id: payload.id,
+    dueDate,
+    counter
+  };
+}
+
+function requireTaskPage(databaseId, pageId) {
+  if (!databaseId) {
+    throw new Error("Task database ID missing. Open Settings and save it.");
+  }
+
+  if (!pageId) {
+    throw new Error("Task ID is required.");
+  }
 }

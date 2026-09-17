@@ -11,6 +11,8 @@
   --danger: #b42318;
   --success: #17633f;
   --info: #2e557e;
+  --postpone-warn-bg: rgba(234, 179, 8, 0.16);
+  --postpone-alert-bg: rgba(220, 38, 38, 0.16);
   --page-bg:
     radial-gradient(circle at 12% 0%, #def4ef 0%, transparent 38%),
     radial-gradient(circle at 95% 15%, #edf4ff 0%, transparent 32%),
@@ -298,27 +300,33 @@ button:hover {
   font-size: 12px;
 }
 
-.today-table th:nth-child(1),
-.today-table td:nth-child(1) {
-  width: 33%;
+.today-table:not(.notes-table) th:nth-child(1),
+.today-table:not(.notes-table) td:nth-child(1) {
+  width: 13%;
 }
 
-.today-table th:nth-child(2),
-.today-table td:nth-child(2),
-.today-table th:nth-child(3),
-.today-table td:nth-child(3),
-.today-table th:nth-child(5),
-.today-table td:nth-child(5) {
+.today-table:not(.notes-table) th:nth-child(2),
+.today-table:not(.notes-table) td:nth-child(2) {
+  width: 41%;
+}
+
+.today-table:not(.notes-table) th:nth-child(3),
+.today-table:not(.notes-table) td:nth-child(3) {
   width: 16%;
 }
 
-.today-table th:nth-child(4),
-.today-table td:nth-child(4) {
-  width: 170px;
+.today-table:not(.notes-table) th:nth-child(4),
+.today-table:not(.notes-table) td:nth-child(4) {
+  width: 11%;
 }
 
-.today-table th:nth-child(6),
-.today-table td:nth-child(6),
+.today-table:not(.notes-table) th:nth-child(5),
+.today-table:not(.notes-table) td:nth-child(5) {
+  width: 10%;
+}
+
+.today-table:not(.notes-table) th:nth-child(6),
+.today-table:not(.notes-table) td:nth-child(6),
 .notes-table th:nth-child(5),
 .notes-table td:nth-child(5) {
   width: 96px;
@@ -336,6 +344,14 @@ button:hover {
   gap: 6px;
   justify-content: center;
   align-items: center;
+}
+
+.today-table tbody tr.postpone-warn td {
+  background-color: var(--postpone-warn-bg);
+}
+
+.today-table tbody tr.postpone-alert td {
+  background-color: var(--postpone-alert-bg);
 }
 
 .notes-table th:nth-child(1),
@@ -379,11 +395,13 @@ button:hover {
   display: block;
 }
 
-.icon-btn-open {
+.icon-btn-open,
+.icon-btn-postpone {
   color: var(--info);
 }
 
-.icon-btn-open:hover {
+.icon-btn-open:hover,
+.icon-btn-postpone:hover {
   border-color: var(--info);
   background: rgba(46, 85, 126, 0.1);
 }
@@ -882,6 +900,8 @@ button:hover {
     --danger: #ff8a80;
     --success: #7ce7b3;
     --info: #8ec9ff;
+    --postpone-warn-bg: rgba(234, 179, 8, 0.22);
+    --postpone-alert-bg: rgba(248, 113, 113, 0.22);
     --page-bg:
       radial-gradient(circle at 12% 0%, #15352f 0%, transparent 38%),
       radial-gradient(circle at 95% 15%, #1b283b 0%, transparent 32%),
@@ -903,7 +923,8 @@ button:hover {
     background-color: #1f2a37;
   }
 
-  .icon-btn-open:hover {
+  .icon-btn-open:hover,
+  .icon-btn-postpone:hover {
     background: rgba(142, 201, 255, 0.12);
   }
 
