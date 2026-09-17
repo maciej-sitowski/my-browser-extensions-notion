@@ -11,12 +11,17 @@
       <header class="topbar">
         <div>
           <h1>Notion Quick Capture</h1>
-          <p class="subtitle">Capture tasks in seconds.</p>
+          <p class="subtitle">Capture tasks and notes in seconds.</p>
         </div>
         <div class="topbar-actions">
           <button id="openSettingsBtn" class="chip-btn" type="button">Settings</button>
         </div>
       </header>
+
+      <nav id="viewTabs" class="view-tabs" aria-label="Main views">
+        <button id="tasksTabBtn" class="tab-btn is-active" type="button" data-view="tasks">Tasks</button>
+        <button id="notesTabBtn" class="tab-btn" type="button" data-view="notes">Notes</button>
+      </nav>
 
       <section id="taskPanel" class="task-form">
         <section class="today-section">
@@ -49,9 +54,9 @@
                 <option value="">All PARA</option>
               </select>
               <select id="tasksSort" class="tasks-filter wide-filter" aria-label="Sort tasks">
+                <option value="section_asc" selected>Day section (A-Z)</option>
                 <option value="do_on_asc">Do on (earliest first)</option>
                 <option value="do_on_desc">Do on (latest first)</option>
-                <option value="section_asc">Day section (A-Z)</option>
                 <option value="para_asc">PARA (A-Z)</option>
                 <option value="status_asc">Status (A-Z)</option>
               </select>
@@ -64,8 +69,8 @@
             <table class="today-table">
               <thead>
                 <tr>
-                  <th>Title</th>
                   <th>Day section</th>
+                  <th>Title</th>
                   <th>PARA</th>
                   <th>Status</th>
                   <th>Do on</th>
@@ -75,6 +80,61 @@
               <tbody id="todayTasksBody"></tbody>
             </table>
           </div>
+        </section>
+      </section>
+
+      <section id="notesPanel" class="task-form hidden" aria-hidden="true">
+        <section id="notesListSection" class="today-section">
+          <div class="today-header">
+            <h2>Notes</h2>
+            <div class="tasks-controls">
+              <select id="notesFilter" class="tasks-filter" aria-label="Filter notes">
+                <option value="all">All</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="this_week">This week</option>
+                <option value="last_week">Last week</option>
+              </select>
+              <select id="notesParaFilter" class="tasks-filter wide-filter" aria-label="Filter notes by PARA">
+                <option value="">All PARA</option>
+              </select>
+              <button id="newNoteBtn" class="chip-btn" type="button">New note</button>
+              <button id="refreshNotesBtn" class="chip-btn" type="button">Refresh</button>
+            </div>
+          </div>
+          <p id="notesCaption" class="hint">Loading notes...</p>
+          <p id="notesEmpty" class="hint hidden">No notes for the selected filter.</p>
+          <div class="today-table-wrap">
+            <table class="today-table notes-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>PARA</th>
+                  <th>Status</th>
+                  <th>Date Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="notesBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="noteReader" class="note-reader hidden" aria-hidden="true">
+          <div class="today-header">
+            <h2 id="noteReaderTitle">Note</h2>
+            <div class="tasks-controls">
+              <button id="editNoteBtn" class="chip-btn" type="button">Edit</button>
+              <button id="saveNoteContentBtn" class="chip-btn chip-save-btn hidden" type="button" disabled>Save</button>
+              <button id="cancelNoteEditBtn" class="chip-btn hidden" type="button">Cancel</button>
+              <a id="noteReaderNotionLink" class="chip-btn chip-link" href="#" target="_blank" rel="noreferrer">Open in Notion</a>
+              <button id="closeNoteReaderBtn" class="chip-btn" type="button">Back</button>
+            </div>
+          </div>
+          <p id="noteReaderCaption" class="hint"></p>
+          <div id="noteFormatHelp" class="hidden"></div>
+          <article id="noteReaderBody" class="note-reader-body"></article>
+          <textarea id="noteEditor" class="note-editor hidden" aria-label="Edit note content"></textarea>
         </section>
       </section>
 
@@ -92,6 +152,9 @@
         <label for="paraDatabaseId">PARA Database ID</label>
         <input id="paraDatabaseId" type="text" placeholder="Notion PARA database id" autocomplete="off" />
 
+        <label for="notesDatabaseId">Notes Database ID</label>
+        <input id="notesDatabaseId" type="text" placeholder="Notion notes database id" autocomplete="off" />
+
         <div class="settings-actions">
           <button id="saveSettingsBtn" type="button">Save settings</button>
           <button id="testBtn" type="button">Test connection</button>
@@ -100,6 +163,54 @@
       </section>
       <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     </main>
+
+    <div id="newNoteModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="newNoteHeading">
+        <div class="modal-header">
+          <h2 id="newNoteHeading">New journal note</h2>
+          <button id="closeNewNoteModalBtn" class="chip-btn" type="button">Close</button>
+        </div>
+
+        <label for="newNoteName">Name</label>
+        <input id="newNoteName" type="text" autocomplete="off" />
+
+        <div class="modal-grid">
+          <div class="field">
+            <label for="newNotePara">PARA</label>
+            <select id="newNotePara"></select>
+          </div>
+          <div class="field">
+            <label for="newNoteStatus">Status</label>
+            <select id="newNoteStatus"></select>
+          </div>
+        </div>
+
+        <label for="newNoteBody">Entry</label>
+        <textarea id="newNoteBody" class="note-editor modal-editor" aria-label="New note entry"></textarea>
+
+        <div id="newNoteFormatHelp"></div>
+
+        <div class="modal-actions">
+          <button id="cancelNewNoteBtn" type="button">Cancel</button>
+          <button id="saveNewNoteBtn" class="primary-btn" type="button">Save note</button>
+        </div>
+      </div>
+    </div>
+
+    <template id="noteFormatHelpTemplate">
+      <aside class="format-help">
+        <p class="format-help-title">Text formatting</p>
+        <ul>
+          <li><code># Heading</code> large title</li>
+          <li><code>## Heading</code> medium title</li>
+          <li><code>### Heading</code> small title</li>
+          <li><code>- item</code> bullet list</li>
+          <li><code>1. item</code> numbered list</li>
+          <li><code>- [ ] task</code> to-do, or <code>- [x]</code> when done</li>
+          <li>Empty lines stay empty — they are not removed</li>
+        </ul>
+      </aside>
+    </template>
 
     <script type="module" src="popup.js"></script>
   </body>

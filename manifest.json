@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Notion Connector",
-  "version": "0.1.0",
-  "description": "Connect to Notion with API token and fetch initial data.",
+  "version": "0.3.0",
+  "description": "Capture Notion tasks and journal notes from the browser.",
   "action": {
     "default_title": "Notion Connector"
   },

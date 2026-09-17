@@ -1,13 +1,30 @@
 import {
+  createNote,
   createTask,
   fetchAllTasks,
-  fetchInitialData,
+  fetchNoteContent,
+  fetchNotes,
   fetchParaInstances,
-  fetchTodayTasks,
+  replaceNoteContent,
   testConnection,
-  updateTaskFields,
-  updateTaskStatus
+  updateNoteFields,
+  updateTaskFields
 } from "./notionClient.js";
+
+const MESSAGE_HANDLERS = {
+  "notion:testConnection": (message) => testConnection(message.token),
+  "notion:createTask": (message) => createTask(message.token, message.databaseId, message.task),
+  "notion:fetchParaInstances": (message) => fetchParaInstances(message.token, message.paraDatabaseId),
+  "notion:fetchAllTasks": (message) => fetchAllTasks(message.token, message.databaseId),
+  "notion:updateTaskFields": (message) =>
+    updateTaskFields(message.token, message.databaseId, message.pageId, message.task),
+  "notion:fetchNotes": (message) => fetchNotes(message.token, message.notesDatabaseId),
+  "notion:createNote": (message) => createNote(message.token, message.notesDatabaseId, message.note),
+  "notion:updateNoteFields": (message) =>
+    updateNoteFields(message.token, message.notesDatabaseId, message.pageId, message.note),
+  "notion:fetchNoteContent": (message) => fetchNoteContent(message.token, message.pageId),
+  "notion:replaceNoteContent": (message) => replaceNoteContent(message.token, message.pageId, message.text)
+};
 
 chrome.action.onClicked.addListener(() => {
   chrome.tabs.create({ url: chrome.runtime.getURL("popup.html?view=tab") });
@@ -19,47 +36,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return;
   }
 
-  handleMessage(message)
+  const handler = MESSAGE_HANDLERS[message.type];
+  if (!handler) {
+    sendResponse({ ok: false, error: "Unsupported action." });
+    return;
+  }
+
+  handler(message)
     .then((result) => sendResponse({ ok: true, data: result }))
     .catch((error) => sendResponse({ ok: false, error: error.message || "Unknown error." }));
 
   return true;
 });
-
-async function handleMessage(message) {
-  const { type, token } = message;
-
-  if (type === "notion:testConnection") {
-    return testConnection(token);
-  }
-
-  if (type === "notion:fetchInitialData") {
-    return fetchInitialData(token);
-  }
-
-  if (type === "notion:createTask") {
-    return createTask(token, message.databaseId, message.task);
-  }
-
-  if (type === "notion:fetchParaInstances") {
-    return fetchParaInstances(token, message.paraDatabaseId);
-  }
-
-  if (type === "notion:fetchTodayTasks") {
-    return fetchTodayTasks(token, message.databaseId, message.dateString);
-  }
-
-  if (type === "notion:fetchAllTasks") {
-    return fetchAllTasks(token, message.databaseId);
-  }
-
-  if (type === "notion:updateTaskStatus") {
-    return updateTaskStatus(token, message.databaseId, message.pageId, message.statusName);
-  }
-
-  if (type === "notion:updateTaskFields") {
-    return updateTaskFields(token, message.databaseId, message.pageId, message.task);
-  }
-
-  throw new Error("Unsupported action.");
-}
